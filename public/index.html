@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prodigy Infotech - Advanced Auth</title>
+    <style>
+        body { font-family: sans-serif; background: #131a26; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: #1c273a; padding: 40px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 320px; text-align: center; }
+        input, select { width: 100%; padding: 12px; margin: 12px 0; background: #28374f; border: 1px solid #3d5275; border-radius: 6px; color: #fff; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #00bcd4; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        p { color: #8fa3c2; cursor: pointer; font-size: 14px; margin-top: 20px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="authSection" class="container">
+        <h2 id="formTitle">Create Account</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <select id="role">
+            <option value="user">Standard User</option>
+            <option value="admin">Administrator</option>
+        </select>
+        <button onclick="handleAuth()" id="submitBtn">Sign Up</button>
+        <p onclick="toggleForm()" id="switchText">Already registered? Log In here</p>
+    </div>
+
+    <div id="dashboardSection" class="container hidden">
+        <h2>🎉 Secure Dashboard</h2>
+        <div id="dataBox" style="background: #28374f; padding: 15px; border-radius: 6px; margin: 20px 0;"></div>
+        <button onclick="logout()" style="background: #ff5252; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">Log Out</button>
+    </div>
+
+    <script>
+        let isLoginMode = false;
+
+        function toggleForm() {
+            isLoginMode = !isLoginMode;
+            document.getElementById('formTitle').innerText = isLoginMode ? 'Welcome Back' : 'Create Account';
+            document.getElementById('role').style.display = isLoginMode ? 'none' : 'block';
+            document.getElementById('submitBtn').innerText = isLoginMode ? 'Log In' : 'Sign Up';
+            document.getElementById('switchText').innerText = isLoginMode ? "Don't have an account? Sign Up" : "Already registered? Log In here";
+        }
+
+        async function handleAuth() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const role = document.getElementById('role').value;
+
+            const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/register';
+            const payload = isLoginMode ? { username, password } : { username, password, role };
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+
+            if (!response.ok) return alert(data.error);
+            alert(data.message);
+
+            if (isLoginMode) {
+                localStorage.setItem('session_token', data.token);
+                localStorage.setItem('user_role', data.role);
+                loadDashboard();
+            } else {
+                toggleForm();
+            }
+        }
+
+        async function loadDashboard() {
+            const token = localStorage.getItem('session_token');
+            const role = localStorage.getItem('user_role');
+            if (!token) return;
+
+            const targetEndpoint = role === 'admin' ? '/api/dashboard/admin' : '/api/dashboard/user';
+            const response = await fetch(targetEndpoint, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+
+            if(response.ok) {
+                document.getElementById('authSection').classList.add('hidden');
+                document.getElementById('dashboardSection').classList.remove('hidden');
+                document.getElementById('dataBox').innerText = data.content;
+            } else {
+                logout();
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            document.getElementById('authSection').classList.remove('hidden');
+            document.getElementById('dashboardSection').classList.add('hidden');
+        }
+
+        window.onload = () => { if(localStorage.getItem('session_token')) loadDashboard(); };
+    </script>
+</body>
+</html>
