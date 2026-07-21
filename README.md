@@ -35,4 +35,4 @@ Users can create an account, log in securely, and access protected pages only af
 
 **Asma H**
 
-Prodigy InfoTech Web Development Internship – Task 01
+Prodigy InfoTech Full-Stack Web Development Internship – Task 01
